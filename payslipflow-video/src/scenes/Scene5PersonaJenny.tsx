@@ -3,23 +3,24 @@ import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from 'remo
 import { COLORS, FONT_FAMILY } from '../theme';
 import { Caption } from '../components/Caption';
 import { PersonIllustration } from '../components/PersonIllustration';
-import { PollCard, SheetIcon } from '../components/SceneProps';
+import { DeliveredIcon, EnvelopeIcon, GoogleSheetIcon, PollBars } from '../components/SceneProps';
 import { fallInto } from '../utils/motion';
 import { SCENES, getActiveCaption } from './sceneData';
 
 const captionBeats = SCENES.find((s) => s.id === 'personaJenny')!.captions;
 
-// 5 scattered "client sheet" positions (chaos), anchored on the RIGHT side
-// of the frame -- deliberately kept well away from Jenny's fixed position
-// on the left, so the tabs never pass over her face or name label.
-const SCATTERED = [
-  { x: 1180, y: 260, rot: -8 },
-  { x: 1480, y: 220, rot: 6 },
-  { x: 1140, y: 460, rot: 10 },
-  { x: 1500, y: 440, rot: -6 },
-  { x: 1320, y: 180, rot: 3 }
+// 5 "client sheet" positions, 3 up / 2 down, anchored on the RIGHT side of
+// the frame -- kept well away from Jenny's fixed position on the left, so
+// nothing ever passes over her face or name label. These stay fixed for
+// the whole scene: the icon shown at each position changes over time
+// (sheet -> email -> delivered) instead of the positions themselves moving.
+const POSITIONS = [
+  { x: 1180, y: 220, rot: -6 },
+  { x: 1370, y: 190, rot: 4 },
+  { x: 1550, y: 230, rot: -3 },
+  { x: 1230, y: 400, rot: 6 },
+  { x: 1470, y: 410, rot: -5 }
 ];
-const SIDEBAR_TARGET = { x: 1420, y: 340 };
 
 export const Scene5PersonaJenny: React.FC = () => {
   const frame = useCurrentFrame();
@@ -27,15 +28,23 @@ export const Scene5PersonaJenny: React.FC = () => {
   const active = getActiveCaption(frame, captionBeats);
 
   const jennyIn = fallInto(frame, fps, 0);
-  const collapse = interpolate(frame, [300, 400], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-  const tabsOpacity = interpolate(frame, [40, 70], [0, 1], { extrapolateRight: 'clamp' });
-  const sidebarOpacity = interpolate(frame, [380, 410], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
 
-  // FIX: once the sheets have attached to the sidebar, clear them off the
-  // screen entirely before the poll comes in. Previously they just sat
-  // there forever, cluttering the same right-side region the poll and the
-  // satisfied-clients row also use -- that's what was reading as "messy."
-  const clearOutOpacity = interpolate(frame, [410, 440], [1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  // Three states for the client-sheet icons, each a simple crossfade into
+  // the next -- no collapsing/stacking animation, they just sit at their
+  // fixed positions and change what they're showing:
+  //   sheets (chaos) -> emails (sent) -> delivered checks
+  // ~2s (60 frames) of holding at each state before moving to the next.
+  const sheetIn = interpolate(frame, [40, 70], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const sheetOut = interpolate(frame, [200, 230], [1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const sheetOpacity = sheetIn * sheetOut;
+
+  const emailIn = interpolate(frame, [200, 230], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const emailOut = interpolate(frame, [290, 320], [1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const emailOpacity = emailIn * emailOut;
+
+  const deliveredIn = interpolate(frame, [290, 320], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const deliveredOut = interpolate(frame, [400, 430], [1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const deliveredOpacity = deliveredIn * deliveredOut;
 
   // Poll now gets the entire freed-up right side to itself, so it's shown
   // much bigger -- no need to stay small when nothing else shares the space.
@@ -44,7 +53,7 @@ export const Scene5PersonaJenny: React.FC = () => {
   const satisfiedOpacity = interpolate(frame, [660, 700], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
   const finalStatOpacity = interpolate(frame, [800, 830], [0, 1], { extrapolateRight: 'clamp' });
 
-  const expression = frame < 400 ? 'stressed' : 'smile';
+  const expression = frame < 320 ? 'stressed' : 'smile';
 
   return (
     <AbsoluteFill style={{ background: COLORS.white }}>
@@ -69,52 +78,36 @@ export const Scene5PersonaJenny: React.FC = () => {
         </div>
       </div>
 
-      {/* Chaotic client SHEETS collapsing into a single PayslipFlow sidebar,
-          then clearing off screen entirely once the point is made. */}
-      {SCATTERED.map((pos, i) => {
-        const x = interpolate(collapse, [0, 1], [pos.x, SIDEBAR_TARGET.x]);
-        const y = interpolate(collapse, [0, 1], [pos.y, SIDEBAR_TARGET.y + (i - 2) * 30]);
-        const rot = interpolate(collapse, [0, 1], [pos.rot, 0]);
-        const scale = interpolate(collapse, [0, 1], [1.15, 0.55]);
-        return (
-          <div
-            key={i}
-            style={{
-              position: 'absolute',
-              left: x,
-              top: y,
-              transform: `rotate(${rot}deg) scale(${scale})`,
-              opacity: tabsOpacity * clearOutOpacity
-            }}
-          >
-            <SheetIcon size={90} />
+      {/* 5 client sheets, fixed in place (3 up / 2 down). Each one just
+          changes what it's showing over time -- sheet -> email -> delivered
+          check -- instead of moving/collapsing anywhere. */}
+      {POSITIONS.map((pos, i) => (
+        <div
+          key={i}
+          style={{
+            position: 'absolute',
+            left: pos.x,
+            top: pos.y,
+            transform: `rotate(${pos.rot}deg)`
+          }}
+        >
+          <div style={{ position: 'absolute', opacity: sheetOpacity }}>
+            <GoogleSheetIcon size={100} />
           </div>
-        );
-      })}
-      <div
-        style={{
-          position: 'absolute',
-          left: SIDEBAR_TARGET.x - 35,
-          top: SIDEBAR_TARGET.y - 105,
-          width: 70,
-          height: 210,
-          borderRadius: 14,
-          background: COLORS.teal,
-          opacity: sidebarOpacity * clearOutOpacity,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}
-      >
-        <span style={{ color: COLORS.white, fontFamily: FONT_FAMILY, fontWeight: 800, fontSize: 15, writingMode: 'vertical-rl' }}>
-          PayslipFlow
-        </span>
-      </div>
+          <div style={{ position: 'absolute', opacity: emailOpacity }}>
+            <EnvelopeIcon size={100} />
+          </div>
+          <div style={{ position: 'absolute', opacity: deliveredOpacity }}>
+            <DeliveredIcon size={100} />
+          </div>
+        </div>
+      ))}
 
-      {/* Poll feature: now has the whole right side to itself, shown big */}
-      <div style={{ position: 'absolute', right: 220, top: 260, opacity: pollOpacity, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-        <PollCard size={420} resultsProgress={resultsProgress} />
-        <p style={{ fontFamily: FONT_FAMILY, fontWeight: 700, fontSize: 20, color: COLORS.slateSoft, textAlign: 'center' }}>
+      {/* Poll feature: now has the whole right side to itself, shown big,
+          with just the bars -- no card, no header, no response buttons. */}
+      <div style={{ position: 'absolute', right: 200, top: 190, opacity: pollOpacity, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+        <PollBars size={460} resultsProgress={resultsProgress} />
+        <p style={{ fontFamily: FONT_FAMILY, fontWeight: 700, fontSize: 22, color: COLORS.slateSoft, textAlign: 'center' }}>
           Sent with every payslip
         </p>
       </div>
