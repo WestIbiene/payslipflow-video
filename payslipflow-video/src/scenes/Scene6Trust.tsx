@@ -27,16 +27,21 @@ export const Scene6Trust: React.FC = () => {
   const clickScale = 1 + Math.max(0, 1 - Math.abs(closeProgress - 1) * 8) * 0.06;
 
   return (
-    <AbsoluteFill style={{ background: COLORS.navy, alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 30 }}>
+    // Was COLORS.navy (near-black) with an ink-colored shackle and body
+    // outline on top -- on a screen or in a compressed video, a dark shape
+    // on a near-black background reads as almost nothing. Switched to the
+    // same light mint (COLORS.mist) used as the background in every other
+    // calm scene in the video, so the padlock has actual contrast to sit on.
+    <AbsoluteFill style={{ background: COLORS.mist, alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 30 }}>
       <div style={{ opacity: fade, transform: `scale(${clickScale})` }}>
         <svg viewBox="0 0 200 200" width="320" height="320">
           <rect x="40" y="90" width="120" height="90" rx="14" fill={COLORS.teal} />
-          <circle cx="100" cy="130" r="12" fill={COLORS.ink} />
-          <rect x="95" y="130" width="10" height="24" rx="4" fill={COLORS.ink} />
+          <circle cx="100" cy="130" r="12" fill={COLORS.white} />
+          <rect x="95" y="130" width="10" height="24" rx="4" fill={COLORS.white} />
           <g transform={`translate(${offsetX} ${offsetY}) rotate(${rotation})`}>
             <path
               d="M 60 95 V 60 A 40 40 0 0 1 140 60 V 95"
-              stroke={COLORS.ink}
+              stroke={COLORS.navy}
               strokeWidth="16"
               fill="none"
               strokeLinecap="round"
@@ -44,7 +49,7 @@ export const Scene6Trust: React.FC = () => {
           </g>
         </svg>
       </div>
-      <Caption text={active.text} sinceFrame={active.sinceFrame} dark />
+      <Caption text={active.text} sinceFrame={active.sinceFrame} />
     </AbsoluteFill>
   );
 };
