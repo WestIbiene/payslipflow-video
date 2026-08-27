@@ -3,7 +3,7 @@ import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from 'remo
 import { COLORS, FONT_FAMILY } from '../theme';
 import { Caption } from '../components/Caption';
 import { PersonIllustration } from '../components/PersonIllustration';
-import { PollCard } from '../components/SceneProps';
+import { PollCard, SheetIcon } from '../components/SceneProps';
 import { fallInto } from '../utils/motion';
 import { SCENES, getActiveCaption } from './sceneData';
 
@@ -11,8 +11,7 @@ const captionBeats = SCENES.find((s) => s.id === 'personaJenny')!.captions;
 
 // 5 scattered "client sheet" positions (chaos), anchored on the RIGHT side
 // of the frame -- deliberately kept well away from Jenny's fixed position
-// on the left, so the tabs never pass over her face or name label (that
-// was the overlap bug in the previous version of this scene).
+// on the left, so the tabs never pass over her face or name label.
 const SCATTERED = [
   { x: 1180, y: 260, rot: -8 },
   { x: 1480, y: 220, rot: 6 },
@@ -32,6 +31,14 @@ export const Scene5PersonaJenny: React.FC = () => {
   const tabsOpacity = interpolate(frame, [40, 70], [0, 1], { extrapolateRight: 'clamp' });
   const sidebarOpacity = interpolate(frame, [380, 410], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
 
+  // FIX: once the sheets have attached to the sidebar, clear them off the
+  // screen entirely before the poll comes in. Previously they just sat
+  // there forever, cluttering the same right-side region the poll and the
+  // satisfied-clients row also use -- that's what was reading as "messy."
+  const clearOutOpacity = interpolate(frame, [410, 440], [1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+
+  // Poll now gets the entire freed-up right side to itself, so it's shown
+  // much bigger -- no need to stay small when nothing else shares the space.
   const pollOpacity = interpolate(frame, [460, 500], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
   const resultsProgress = interpolate(frame, [540, 640], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
   const satisfiedOpacity = interpolate(frame, [660, 700], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
@@ -62,13 +69,13 @@ export const Scene5PersonaJenny: React.FC = () => {
         </div>
       </div>
 
-      {/* Chaotic client tabs collapsing into a single PayslipFlow sidebar */}
+      {/* Chaotic client SHEETS collapsing into a single PayslipFlow sidebar,
+          then clearing off screen entirely once the point is made. */}
       {SCATTERED.map((pos, i) => {
         const x = interpolate(collapse, [0, 1], [pos.x, SIDEBAR_TARGET.x]);
-        const y = interpolate(collapse, [0, 1], [pos.y, SIDEBAR_TARGET.y + (i - 2) * 12]);
+        const y = interpolate(collapse, [0, 1], [pos.y, SIDEBAR_TARGET.y + (i - 2) * 30]);
         const rot = interpolate(collapse, [0, 1], [pos.rot, 0]);
-        const w = interpolate(collapse, [0, 1], [110, 60]);
-        const h = interpolate(collapse, [0, 1], [70, 40]);
+        const scale = interpolate(collapse, [0, 1], [1.15, 0.55]);
         return (
           <div
             key={i}
@@ -76,15 +83,12 @@ export const Scene5PersonaJenny: React.FC = () => {
               position: 'absolute',
               left: x,
               top: y,
-              width: w,
-              height: h,
-              background: COLORS.mist,
-              border: `2px solid ${COLORS.navy}33`,
-              borderRadius: 10,
-              transform: `rotate(${rot}deg)`,
-              opacity: tabsOpacity
+              transform: `rotate(${rot}deg) scale(${scale})`,
+              opacity: tabsOpacity * clearOutOpacity
             }}
-          />
+          >
+            <SheetIcon size={90} />
+          </div>
         );
       })}
       <div
@@ -96,7 +100,7 @@ export const Scene5PersonaJenny: React.FC = () => {
           height: 210,
           borderRadius: 14,
           background: COLORS.teal,
-          opacity: sidebarOpacity,
+          opacity: sidebarOpacity * clearOutOpacity,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center'
@@ -107,23 +111,27 @@ export const Scene5PersonaJenny: React.FC = () => {
         </span>
       </div>
 
-      {/* Poll feature: sent alongside every payslip, results roll in */}
-      <div style={{ position: 'absolute', right: 260, top: 200, opacity: pollOpacity }}>
-        <PollCard size={220} resultsProgress={resultsProgress} />
-        <p style={{ fontFamily: FONT_FAMILY, fontWeight: 700, fontSize: 16, color: COLORS.slateSoft, textAlign: 'center', marginTop: 8 }}>
+      {/* Poll feature: now has the whole right side to itself, shown big */}
+      <div style={{ position: 'absolute', right: 220, top: 260, opacity: pollOpacity, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+        <PollCard size={420} resultsProgress={resultsProgress} />
+        <p style={{ fontFamily: FONT_FAMILY, fontWeight: 700, fontSize: 20, color: COLORS.slateSoft, textAlign: 'center' }}>
           Sent with every payslip
         </p>
       </div>
 
-      {/* Satisfied clients indicator */}
-      <div style={{ position: 'absolute', right: 300, top: 460, display: 'flex', gap: 12, opacity: satisfiedOpacity }}>
-        {[0, 1, 2, 3, 4].map((i) => (
-          <div key={i} style={{ width: 30, height: 30, borderRadius: '50%', background: COLORS.teal, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="16" height="16" viewBox="0 0 16 16">
-              <path d="M2 8l4 4 8-8" stroke={COLORS.white} strokeWidth="2.2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
-        ))}
+      {/* Satisfied clients indicator -- clearly labeled now, sits below the
+          poll card with real spacing instead of crowding next to it. */}
+      <div style={{ position: 'absolute', right: 260, top: 660, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, opacity: satisfiedOpacity }}>
+        <div style={{ display: 'flex', gap: 14 }}>
+          {[0, 1, 2, 3, 4].map((i) => (
+            <div key={i} style={{ width: 40, height: 40, borderRadius: '50%', background: COLORS.teal, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="20" height="20" viewBox="0 0 16 16">
+                <path d="M2 8l4 4 8-8" stroke={COLORS.white} strokeWidth="2.2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+          ))}
+        </div>
+        <p style={{ fontFamily: FONT_FAMILY, fontWeight: 800, fontSize: 18, color: COLORS.navy, margin: 0 }}>5 happy clients</p>
       </div>
 
       <div style={{ position: 'absolute', left: 0, right: 0, bottom: 150, textAlign: 'center', opacity: finalStatOpacity }}>
