@@ -81,6 +81,20 @@ export const BankIcon: React.FC<{ size?: number; approved: boolean }> = ({ size 
   </svg>
 );
 
+// A small spreadsheet "sheet" tab -- used for the scattered client-sheet
+// icons that collapse into the PayslipFlow sidebar in the Jenny scene.
+export const SheetIcon: React.FC<{ size?: number }> = ({ size = 90 }) => (
+  <svg viewBox="0 0 100 100" width={size} height={size}>
+    <rect x="8" y="8" width="84" height="84" rx="10" fill={COLORS.white} stroke="#E5E5E5" strokeWidth="2" />
+    <rect x="8" y="8" width="84" height="22" rx="10" fill={COLORS.teal} />
+    <rect x="8" y="24" width="84" height="6" fill={COLORS.teal} />
+    <line x1="8" y1="52" x2="92" y2="52" stroke={COLORS.mist} strokeWidth="3" />
+    <line x1="8" y1="74" x2="92" y2="74" stroke={COLORS.mist} strokeWidth="3" />
+    <line x1="36" y1="30" x2="36" y2="92" stroke={COLORS.mist} strokeWidth="3" />
+    <line x1="64" y1="30" x2="64" y2="92" stroke={COLORS.mist} strokeWidth="3" />
+  </svg>
+);
+
 // A small poll card: two response buttons + a tiny bar chart, representing
 // responses rolling in.
 export const PollCard: React.FC<{ size?: number; resultsProgress: number }> = ({ size = 160, resultsProgress }) => (
