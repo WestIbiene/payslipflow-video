@@ -81,33 +81,77 @@ export const BankIcon: React.FC<{ size?: number; approved: boolean }> = ({ size 
   </svg>
 );
 
-// A small spreadsheet "sheet" tab -- used for the scattered client-sheet
-// icons that collapse into the PayslipFlow sidebar in the Jenny scene.
-export const SheetIcon: React.FC<{ size?: number }> = ({ size = 90 }) => (
-  <svg viewBox="0 0 100 100" width={size} height={size}>
-    <rect x="8" y="8" width="84" height="84" rx="10" fill={COLORS.white} stroke="#E5E5E5" strokeWidth="2" />
-    <rect x="8" y="8" width="84" height="22" rx="10" fill={COLORS.teal} />
-    <rect x="8" y="24" width="84" height="6" fill={COLORS.teal} />
-    <line x1="8" y1="52" x2="92" y2="52" stroke={COLORS.mist} strokeWidth="3" />
-    <line x1="8" y1="74" x2="92" y2="74" stroke={COLORS.mist} strokeWidth="3" />
-    <line x1="36" y1="30" x2="36" y2="92" stroke={COLORS.mist} strokeWidth="3" />
-    <line x1="64" y1="30" x2="64" y2="92" stroke={COLORS.mist} strokeWidth="3" />
-  </svg>
+// Shared "boxed line icon" look -- the same white rounded card + soft
+// shadow used for the Google Sheet / Payslip+Email / Delivered icons in
+// Scene2Explainer, reused here for the Jenny scene's client-sheet icons
+// so the two scenes visually match instead of Jenny getting a flatter,
+// cheaper-looking treatment.
+const IconCard: React.FC<{ size: number; children: React.ReactNode }> = ({ size, children }) => (
+  <div
+    style={{
+      width: size,
+      height: size,
+      borderRadius: size * 0.2,
+      background: COLORS.white,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      boxShadow: '0 8px 20px rgba(30,76,135,0.14)'
+    }}
+  >
+    {children}
+  </div>
 );
 
-// A small poll card: two response buttons + a tiny bar chart, representing
-// responses rolling in.
-export const PollCard: React.FC<{ size?: number; resultsProgress: number }> = ({ size = 160, resultsProgress }) => (
-  <svg viewBox="0 0 160 120" width={size} height={(size * 120) / 160}>
-    <rect x="4" y="4" width="152" height="112" rx="12" fill={COLORS.white} stroke="#E5E5E5" strokeWidth="2" />
-    <rect x="18" y="18" width="90" height="10" rx="5" fill={COLORS.slateSoft} />
-    <circle cx="30" cy="55" r="14" fill={COLORS.mist} />
-    <path d="M 24 55 Q 30 45 36 55 Q 30 62 24 55 Z" fill={COLORS.teal} />
-    <circle cx="70" cy="55" r="14" fill={COLORS.mist} />
-    <path d="M 64 55 Q 70 65 76 55 Q 70 48 64 55 Z" fill={COLORS.slateSoft} />
-    {/* mini bar chart, grows with resultsProgress (0-1) */}
-    <rect x="100" y={90 - 55 * resultsProgress} width="12" height={55 * resultsProgress} rx="3" fill={COLORS.teal} />
-    <rect x="118" y={90 - 35 * resultsProgress} width="12" height={35 * resultsProgress} rx="3" fill={COLORS.tealDark} />
-    <rect x="136" y={90 - 20 * resultsProgress} width="12" height={20 * resultsProgress} rx="3" fill={COLORS.coral} />
-  </svg>
+// Client sheet -- same "Google Sheet" glyph as the intro scene.
+export const GoogleSheetIcon: React.FC<{ size?: number }> = ({ size = 90 }) => (
+  <IconCard size={size}>
+    <svg width={size * 0.55} height={size * 0.55} viewBox="0 0 24 24" fill="none">
+      <rect x="4" y="3" width="16" height="18" rx="2" stroke={COLORS.teal} strokeWidth="1.6" />
+      <path d="M4 9h16M4 14h16M9 3v18" stroke={COLORS.teal} strokeWidth="1.4" />
+    </svg>
+  </IconCard>
 );
+
+// Payslip sent by email -- same envelope glyph as the intro scene.
+export const EnvelopeIcon: React.FC<{ size?: number }> = ({ size = 90 }) => (
+  <IconCard size={size}>
+    <svg width={size * 0.55} height={size * 0.55} viewBox="0 0 24 24" fill="none">
+      <rect x="3" y="6" width="18" height="13" rx="2" stroke={COLORS.navy} strokeWidth="1.6" />
+      <path d="M3 7l9 6 9-6" stroke={COLORS.navy} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  </IconCard>
+);
+
+// Delivered confirmation -- same check-in-circle glyph as the intro scene.
+export const DeliveredIcon: React.FC<{ size?: number }> = ({ size = 90 }) => (
+  <IconCard size={size}>
+    <svg width={size * 0.55} height={size * 0.55} viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="9" stroke={COLORS.teal} strokeWidth="1.6" />
+      <path d="M8 12.5l2.5 2.5L16 9" stroke={COLORS.teal} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  </IconCard>
+);
+
+// Bare growing bar chart -- no card, no header bar, no response buttons.
+// Just the three bars, sized big since they're the whole point: responses
+// rolling in. Grows from 0 to full height as resultsProgress goes 0 -> 1.
+export const PollBars: React.FC<{ size?: number; resultsProgress: number }> = ({ size = 260, resultsProgress }) => {
+  const barHeights = [130, 85, 48];
+  const barX = [10, 75, 140];
+  return (
+    <svg viewBox="0 0 200 180" width={size} height={(size * 180) / 200}>
+      {barX.map((x, i) => (
+        <rect
+          key={i}
+          x={x}
+          y={180 - barHeights[i] * resultsProgress}
+          width="48"
+          height={barHeights[i] * resultsProgress}
+          rx="8"
+          fill={i === 0 ? COLORS.teal : i === 1 ? COLORS.tealDark : COLORS.coral}
+        />
+      ))}
+    </svg>
+  );
+};
